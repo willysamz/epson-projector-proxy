@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/willysamz/epson-projector-proxy
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  projectorHost: "192.168.1.100"
+  projectorPort: "3629"
+  projectorTimeout: "5.0"
+  pollInterval: "15.0"
+
+mqtt:
+  host: "mqtt"
+  port: "1883"
+  clientId: "epson-projector-proxy"
+  topicPrefix: "epson"
+  keepalive: "60"
+  qos: "0"
+  username: ""
+  password: ""
+
+ha:
+  discoveryEnabled: "true"
+  discoveryPrefix: "homeassistant"
+  deviceName: "Epson HC1080 Projector"
+  deviceId: "epson_projector"
+
+logging:
+  level: INFO
+  json: true
+
+service:
+  type: ClusterIP
+  port: 8080
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podSecurityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop: [ALL]
+
+livenessProbe:
+  httpGet: { path: /healthz/live, port: http }
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet: { path: /healthz/ready, port: http }
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+resources:
+  limits: { cpu: 200m, memory: 128Mi }
+  requests: { cpu: 25m, memory: 48Mi }
+
+extraEnv: []
+podAnnotations: {}
+podLabels: {}
