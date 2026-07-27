@@ -2,8 +2,27 @@ apiVersion: v1
 entries:
   epson-projector-proxy:
   - apiVersion: v2
+    appVersion: 0.1.2
+    created: "2026-07-27T03:13:54.28781889Z"
+    description: MQTT-discoverable thin control wrapper for Epson projectors (ESC/VP21
+      over TCP)
+    digest: 3cfb8c8df56e0afc072479de24a57608f28aaae28b34fdfc62327343364eab91
+    keywords:
+    - epson
+    - projector
+    - home-assistant
+    - mqtt
+    - escvp21
+    maintainers:
+    - name: wsamuels
+    name: epson-projector-proxy
+    type: application
+    urls:
+    - https://willysamz.github.io/epson-projector-proxy/epson-projector-proxy-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
     appVersion: 0.1.1
-    created: "2026-07-27T02:37:42.233200583Z"
+    created: "2026-07-27T03:13:54.287388596Z"
     description: MQTT-discoverable thin control wrapper for Epson projectors (ESC/VP21
       over TCP)
     digest: 57f45124fb0a7bcf3eb59e07375577b53703e8bf60794115757a1040a5590d45
@@ -22,7 +41,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2026-07-27T02:37:42.232766963Z"
+    created: "2026-07-27T03:13:54.286981786Z"
     description: MQTT-discoverable thin control wrapper for Epson projectors (ESC/VP21
       over TCP)
     digest: 320e1c551d61e9ad3e9f7f5f4cd466d8c2410f042d504eb0a9caadcde21ed831
@@ -39,4 +58,4 @@ entries:
     urls:
     - https://willysamz.github.io/epson-projector-proxy/epson-projector-proxy-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-27T02:37:42.232227435Z"
+generated: "2026-07-27T03:13:54.286321493Z"
