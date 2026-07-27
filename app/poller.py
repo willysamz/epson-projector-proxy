@@ -116,5 +116,11 @@ class Poller:
                 return
             if raw is None:
                 continue
-            value = prop.codec.to_ha(raw)
+            # Decode defensively: a single malformed/unexpected reply must not
+            # abort the whole poll cycle (which would stall every entity's state).
+            try:
+                value = prop.codec.to_ha(raw)
+            except Exception:  # noqa: BLE001
+                log.warning("poll.decode_failed", prop=prop.name, cmd=prop.cmd, raw=raw)
+                continue
             await self._publish_delta(f"{prefix}/{prop.name}/state", value)

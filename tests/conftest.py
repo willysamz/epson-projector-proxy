@@ -27,6 +27,7 @@ class FakeProjector:
         self.fail_next = False  # force one transport error
         self.reject_handshake = False  # force handshake rejection
         self.open_conns = 0  # track open connections for socket leak tests
+        self.inject_event = 0  # emit N unsolicited IMEVENT messages before upcoming replies
 
     async def start(self):
         self.server = await asyncio.start_server(self._handle, self.host, 0)
@@ -67,10 +68,7 @@ class FakeProjector:
                 text = line.decode().strip()
                 if text.endswith("?"):
                     cmd = text[:-1]
-                    if cmd in self.state:
-                        writer.write(f"{cmd}={self.state[cmd]}\r:".encode())
-                    else:
-                        writer.write(b"ERR\r:")
+                    out = f"{cmd}={self.state[cmd]}\r:".encode() if cmd in self.state else b"ERR\r:"
                 else:
                     parts = text.split(None, 1)
                     cmd = parts[0]
@@ -82,9 +80,16 @@ class FakeProjector:
                             self.state["VOL"] = str(v)
                         elif arg:
                             self.state[cmd] = arg
-                        writer.write(b":")
+                        out = b":"
                     else:
-                        writer.write(b"ERR\r:")
+                        out = b"ERR\r:"
+                # Simulate the projector pushing an unsolicited IMEVENT (as it does on
+                # an input/signal change) just before a normal reply — this desyncs a
+                # naive one-read-per-command client.
+                if self.inject_event > 0:
+                    self.inject_event -= 1
+                    writer.write(b"IMEVENT=0001 03 00000002 00000000 T1 F1\r:")
+                writer.write(out)
                 await writer.drain()
         finally:
             try:

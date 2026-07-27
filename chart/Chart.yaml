@@ -2,8 +2,8 @@ apiVersion: v2
 name: epson-projector-proxy
 description: MQTT-discoverable thin control wrapper for Epson projectors (ESC/VP21 over TCP)
 type: application
-version: 0.1.1
-appVersion: "0.1.1"
+version: 0.1.2
+appVersion: "0.1.2"
 keywords: [epson, projector, home-assistant, mqtt, escvp21]
 maintainers:
   - name: wsamuels

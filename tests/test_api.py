@@ -72,6 +72,10 @@ async def test_command_subscriber_triggers_poll_on_successful_set():
         async def subscribe(self, f):
             pass
 
+        async def publish(self, topic, payload=None, retain=False):
+            self.published = getattr(self, "published", [])
+            self.published.append((topic, payload))
+
         @property
         def messages(self):
             async def gen():
@@ -82,9 +86,12 @@ async def test_command_subscriber_triggers_poll_on_successful_set():
     handler = MagicMock()
     handler.handle = AsyncMock(return_value=True)
     poller = MagicMock()
-    await _command_subscriber(FakeMqtt(), handler, poller, "epson")
+    fm = FakeMqtt()
+    await _command_subscriber(fm, handler, poller, "epson")
     handler.handle.assert_awaited_once_with("source", "HDMI2")
     poller.trigger_immediate_poll.assert_called_once()
+    # optimistic publish so HA reflects the change immediately (no snap-back)
+    assert ("epson/source/state", "HDMI2") in getattr(fm, "published", [])
 
 
 @pytest.mark.asyncio
@@ -99,6 +106,10 @@ async def test_command_subscriber_no_poll_when_handle_false():
     class FakeMqtt:
         async def subscribe(self, f):
             pass
+
+        async def publish(self, topic, payload=None, retain=False):
+            self.published = getattr(self, "published", [])
+            self.published.append((topic, payload))
 
         @property
         def messages(self):

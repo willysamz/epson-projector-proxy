@@ -77,31 +77,73 @@ class EpsonClient:
         self._reader = None
         self._writer = None
 
-    async def _roundtrip(self, raw: str) -> str:
-        await self._ensure_connected()
-        assert self._reader is not None and self._writer is not None
-        try:
-            self._writer.write(raw.encode() + b"\r")
-            await self._writer.drain()
-            data = await asyncio.wait_for(self._reader.readuntil(b":"), self.timeout)
-        except (TimeoutError, OSError, asyncio.IncompleteReadError) as e:
-            await self._reset()
-            raise ProjectorUnreachable(f"io failed on {raw!r}: {e}") from e
+    # Max ESC/VP.net messages to skip while resyncing past unsolicited events
+    # (the projector pushes e.g. IMEVENT on an input/signal change) before giving up.
+    _MAX_SKIP = 8
+    _IO_ERRORS = (TimeoutError, OSError, asyncio.IncompleteReadError, asyncio.LimitOverrunError)
+
+    async def _read_msg(self) -> str:
+        assert self._reader is not None
+        data = await asyncio.wait_for(self._reader.readuntil(b":"), self.timeout)
         return data.decode(errors="replace").strip().rstrip(":").strip()
 
     async def query(self, cmd: str) -> str | None:
+        """Send CMD? and return its value, or None on ERR.
+
+        Skips unsolicited messages (e.g. IMEVENT pushed on an input change) and
+        any stale reply whose key doesn't match the command, so an input-change
+        event can't desync the request/response stream."""
         async with self._lock:
-            resp = await self._roundtrip(f"{cmd}?")
-        if resp == "ERR" or resp.endswith("ERR"):
-            return None
-        if "=" in resp:
-            return resp.split("=", 1)[1].strip()
-        return resp or None
+            await self._ensure_connected()
+            assert self._writer is not None
+            try:
+                self._writer.write(f"{cmd}?".encode() + b"\r")
+                await self._writer.drain()
+                for _ in range(self._MAX_SKIP):
+                    resp = await self._read_msg()
+                    if not resp:
+                        continue
+                    if "=" in resp:
+                        key, val = resp.split("=", 1)
+                        if key.strip().upper() == cmd.upper():
+                            return val.strip()
+                        log.debug("projector.skip", got=key.strip(), want=cmd)
+                        continue
+                    if resp.upper().endswith("ERR"):
+                        return None
+                    log.debug("projector.skip", got=resp, want=cmd)
+            except self._IO_ERRORS as e:
+                await self._reset()
+                raise ProjectorUnreachable(f"io failed on {cmd}?: {e}") from e
+            await self._reset()
+            raise ProjectorUnreachable(
+                f"desync: no reply matched {cmd}? within {self._MAX_SKIP} messages"
+            )
 
     async def set(self, cmd: str, arg: str) -> bool:
+        """Send CMD ARG and return True on ack (bare ':'), False on ERR.
+
+        Skips unsolicited event messages that may precede the ack."""
         async with self._lock:
-            resp = await self._roundtrip(f"{cmd} {arg}")
-        return "ERR" not in resp
+            await self._ensure_connected()
+            assert self._writer is not None
+            try:
+                self._writer.write(f"{cmd} {arg}".encode() + b"\r")
+                await self._writer.drain()
+                for _ in range(self._MAX_SKIP):
+                    resp = await self._read_msg()
+                    if resp == "":
+                        return True
+                    if resp.upper().endswith("ERR"):
+                        return False
+                    log.debug("projector.skip_set", got=resp, cmd=cmd)
+            except self._IO_ERRORS as e:
+                await self._reset()
+                raise ProjectorUnreachable(f"io failed on set {cmd}: {e}") from e
+            await self._reset()
+            raise ProjectorUnreachable(
+                f"desync: no ack for set {cmd} within {self._MAX_SKIP} messages"
+            )
 
     async def close(self) -> None:
         async with self._lock:
