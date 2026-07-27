@@ -40,10 +40,11 @@ class Prop:
 SOURCE_MAP = {"30": "HDMI1", "A0": "HDMI2", "10": "PC", "20": "PC2"}
 LAMP_POWER_MAP = {"00": "High", "01": "ECO"}  # 1080 rejects "02" Medium (LUMINANCE 02 -> ERR)
 IRIS_MAP = {"00": "Off", "01": "Normal", "02": "High"}
-# CMODE codes finalized against the live projector + the amosyuen/ha-epson-projector-link
-# const map (Task 5). Only the four modes the HC1080 actually supports are offered as
-# selectable options; the projector's current mode reads back as 0C = Bright Cinema.
-CMODE_MAP = {"06": "Dynamic", "07": "Natural", "0C": "Bright Cinema", "15": "Cinema"}
+# CMODE codes verified against the live HC1080: it only ACCEPTS + holds these three
+# for standard HDMI signals. "Natural" (07) and "Game" (0D) from the generic Epson
+# library ERR / auto-revert (Epson gates color modes by input signal), so they are not
+# offered. Names follow the amosyuen/ha-epson-projector-link const map.
+CMODE_MAP = {"06": "Dynamic", "0C": "Bright Cinema", "15": "Cinema"}
 # ASPECT and OVSCAN are intentionally NOT modeled in v1: neither is defined in the
 # authoritative library, ASPECT returns an ambiguous two-token value ("00 30") with an
 # unverified set format, and their option maps could not be confirmed without disruptively

@@ -1,6 +1,6 @@
 [project]
 name = "epson-projector-proxy"
-version = "0.1.0"
+version = "0.1.1"
 description = "MQTT-discoverable thin control wrapper for Epson projectors (ESC/VP21 over TCP)"
 requires-python = ">=3.11"
 

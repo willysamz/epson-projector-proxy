@@ -56,7 +56,7 @@ def test_picture_mode_options_filled():
     # CMODE map finalized in Task 5 — the projector's current mode 0C must decode.
     assert "0C" in p.codec.raw_to_name
     assert p.codec.to_ha("0C") == "Bright Cinema"
-    assert set(p.codec.options) == {"Dynamic", "Natural", "Bright Cinema", "Cinema"}
+    assert set(p.codec.options) == {"Dynamic", "Bright Cinema", "Cinema"}
 
 
 def test_aspect_and_overscan_not_modeled_in_v1():
