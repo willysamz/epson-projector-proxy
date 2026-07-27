@@ -31,6 +31,7 @@ structlog.configure(
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.format_exc_info,
         structlog.processors.JSONRenderer()  # type: ignore[list-item]
         if settings.log_json
         else structlog.dev.ConsoleRenderer(),
@@ -65,6 +66,9 @@ async def _command_subscriber(
             try:
                 ok = await handler.handle(prop, payload)
                 if ok:
+                    # Optimistic: reflect the change immediately so HA doesn't snap
+                    # back to the old value; the triggered poll reconciles the truth.
+                    await mqtt.publish(f"{prefix}/{prop}/state", payload, retain=True)
                     poller.trigger_immediate_poll()
             except Exception:  # noqa: BLE001
                 log.exception("command.error", topic=str(message.topic))
